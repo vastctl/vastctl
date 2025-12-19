@@ -908,17 +908,27 @@ def use(ctx, name):
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation for cleanup')
 @click.option('--project', '-p', help='Only refresh instances in project')
 @click.option('--verify-setup', is_flag=True, help='Verify SSH and Jupyter status')
+@click.option('--debug', '-d', is_flag=True, help='Show raw API data for debugging')
 @pass_ctx
-def refresh(ctx, yes, project, verify_setup):
-    """Refresh instance statuses from Vast.ai"""
+def refresh(ctx, yes, project, verify_setup, debug):
+    """Refresh instance statuses from Vast.ai and import untracked instances"""
     with ctx.get_api() as api:
         with console.status("Fetching instances from Vast.ai..."):
             vast_instances = api.show_instances()
 
         console.print(f"[dim]Found {len(vast_instances)} instance(s) on Vast.ai[/dim]")
 
+        if debug:
+            console.print("\n[bold]Raw API data:[/bold]")
+            for vi in vast_instances:
+                console.print(f"  ID={vi.get('id')} label={vi.get('label')!r} actual_status={vi.get('actual_status')!r}")
+
         # Update registry with remote state
         local_instances = ctx.registry.list(project=project) if project else ctx.registry.list()
+
+        # Track which vast instances are already in local registry
+        tracked_vast_ids = set()
+        tracked_names = set()
 
         for inst in local_instances:
             # Find matching remote instance
@@ -926,21 +936,106 @@ def refresh(ctx, yes, project, verify_setup):
             for r in vast_instances:
                 if r.get('id') == inst.vast_id or r.get('label') == inst.name:
                     remote = r
+                    tracked_vast_ids.add(r.get('id'))
+                    if r.get('label'):
+                        tracked_names.add(r.get('label'))
                     break
 
             if remote:
                 actual_status = remote.get('actual_status', 'unknown')
+                remote_id = remote.get('id')
+
                 if actual_status == 'running':
                     inst.update_status('running')
+                    # Update vast_id if matched by label but id was missing/different
+                    if inst.vast_id != remote_id:
+                        inst.vast_id = remote_id
+                    # Update SSH info if missing
+                    if not inst.ssh_host or not inst.ssh_port:
+                        try:
+                            ssh_host, ssh_port = api.get_ssh_info(remote_id)
+                            inst.ssh_host = ssh_host
+                            inst.ssh_port = ssh_port
+                            ctx.registry.update(inst.name, {
+                                'status': inst.status,
+                                'vast_id': remote_id,
+                                'ssh_host': ssh_host,
+                                'ssh_port': ssh_port
+                            })
+                        except Exception:
+                            ctx.registry.update(inst.name, {'status': inst.status, 'vast_id': remote_id})
+                    else:
+                        ctx.registry.update(inst.name, {'status': inst.status, 'vast_id': remote_id})
                 elif actual_status == 'exited':
                     inst.update_status('stopped')
+                    ctx.registry.update(inst.name, {'status': inst.status})
                 else:
                     inst.update_status(actual_status)
+                    ctx.registry.update(inst.name, {'status': inst.status})
 
-                ctx.registry.update(inst.name, {'status': inst.status})
-                console.print(f"  {inst.name}: {inst.status}")
+                # Show status with raw API status for clarity
+                status_str = f"{inst.name}: {inst.status}"
+                if debug:
+                    status_str += f" (api: {actual_status}, id: {remote_id})"
+                console.print(f"  {status_str}")
             else:
                 console.print(f"  [yellow]{inst.name}: not found on Vast.ai[/yellow]")
+
+        # Auto-import untracked instances from Vast.ai
+        imported_count = 0
+        for remote in vast_instances:
+            vast_id = remote.get('id')
+            label = remote.get('label', '')
+
+            # Skip if already tracked
+            if vast_id in tracked_vast_ids:
+                continue
+            if label and label in tracked_names:
+                continue
+
+            # Generate name from label or vast_id
+            name = label if label else f"vast-{vast_id}"
+
+            # Check if name conflicts with existing local instance
+            if ctx.registry.get(name):
+                name = f"{name}-{vast_id}"
+
+            actual_status = remote.get('actual_status', 'unknown')
+            status = 'running' if actual_status == 'running' else 'stopped' if actual_status == 'exited' else actual_status
+
+            # Create new instance
+            instance = Instance(
+                name=name,
+                vast_id=vast_id,
+                machine_id=remote.get('machine_id'),
+                gpu_type=remote.get('gpu_name', 'Unknown'),
+                gpu_count=remote.get('num_gpus', 1),
+                disk_gb=int(remote.get('disk_space', 0)),
+                image=remote.get('image_uuid', ''),
+                price_per_hour=remote.get('dph_total', 0),
+                bandwidth_mbps=remote.get('inet_down', 0),
+                reliability=remote.get('reliability', 0),
+                status=status,
+            )
+
+            # Get SSH info for running instances
+            if status == 'running':
+                try:
+                    ssh_host, ssh_port = api.get_ssh_info(vast_id)
+                    instance.ssh_host = ssh_host
+                    instance.ssh_port = ssh_port
+                except Exception:
+                    pass  # SSH info not available yet
+
+            ctx.registry.add(instance)
+            imported_count += 1
+            import_str = f"  [green]+ {name}[/green]: imported ({status})"
+            if debug:
+                import_str += f" (api: {actual_status}, id: {vast_id})"
+            console.print(import_str)
+
+        if imported_count > 0:
+            console.print(f"\n[green]Imported {imported_count} new instance(s)[/green]")
 
 
 @click.command()

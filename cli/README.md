@@ -286,4 +286,4 @@ vastctl restart-jupyter mybox
 
 ## License
 
-MIT
+Apache-2.0

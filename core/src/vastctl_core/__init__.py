@@ -5,7 +5,7 @@ and can be used as a standalone library for programmatic access to Vast.ai.
 """
 
 __version__ = "0.1.0"
-__author__ = "VastLab Contributors"
+__author__ = "alerad"
 
 from .config import Config
 from .instance import Instance

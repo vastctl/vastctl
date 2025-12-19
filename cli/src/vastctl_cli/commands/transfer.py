@@ -19,15 +19,20 @@ pass_ctx = click.make_pass_decorator(CliContext, ensure=True)
 def parse_remote_path(path: str, registry):
     """Parse remote path in format 'instance:path' or ':path'.
 
-    Returns (instance, remote_path) or (None, None) if not a remote path.
+    Returns (instance, remote_path, error_msg) tuple.
+    - If valid: (instance, remote_path, None)
+    - If not a remote path: (None, None, None)
+    - If instance not found: (None, None, "error message")
     """
     if ':' not in path:
-        return None, None
+        return None, None, None
 
     # Handle ':path' format (uses active instance)
     if path.startswith(':'):
         inst = registry.get_active()
-        return inst, path[1:]
+        if not inst:
+            return None, None, "No active instance set. Use 'vastctl use <name>' or specify instance in path."
+        return inst, path[1:], None
 
     # Handle 'instance:path' format
     parts = path.split(':', 1)
@@ -35,9 +40,11 @@ def parse_remote_path(path: str, registry):
         instance_name, remote_path = parts
         inst = registry.get(instance_name)
         if inst:
-            return inst, remote_path
+            return inst, remote_path, None
+        else:
+            return None, None, f"Instance '{instance_name}' not found. Run 'vastctl refresh' to import instances from Vast.ai."
 
-    return None, None
+    return None, None, None
 
 
 @click.command()
@@ -61,8 +68,16 @@ def cp(ctx, source, destination, recursive, force_include, max_size, instance, p
         vastctl cp -r :remote/dir ./local/       # Download from active instance
     """
     # Parse source and destination for remote paths
-    src_inst, src_remote = parse_remote_path(source, ctx.registry)
-    dst_inst, dst_remote = parse_remote_path(destination, ctx.registry)
+    src_inst, src_remote, src_err = parse_remote_path(source, ctx.registry)
+    dst_inst, dst_remote, dst_err = parse_remote_path(destination, ctx.registry)
+
+    # Check for instance lookup errors
+    if src_err:
+        console.print(f"[red]Error: {src_err}[/red]")
+        sys.exit(1)
+    if dst_err:
+        console.print(f"[red]Error: {dst_err}[/red]")
+        sys.exit(1)
 
     # Determine direction and instance
     is_upload = src_inst is None and dst_inst is not None

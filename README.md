@@ -48,4 +48,4 @@ vastctl kill mybox
 
 ## License
 
-MIT
+Apache-2.0
