@@ -1,0 +1,60 @@
+{
+  "input_hash": "219e80adce0087856de82cfd508f52d4",
+  "tags": [
+    "python",
+    "click-cli",
+    "gpu-management",
+    "cloud-infrastructure",
+    "command-orchestration",
+    "rich-ui",
+    "cli-framework"
+  ],
+  "summary": "This folder acts as the source root for the VastCtl CLI application, housing the core command-line interface logic and orchestration. It serves as the bridge between the user-facing CLI commands and the underlying business logic for GPU provisioning and cloud synchronization.",
+  "concepts": [
+    "command-line-interface",
+    "infrastructure-as-code",
+    "remote-resource-management"
+  ],
+  "purpose": "root",
+  "domain": "gpu-provisioning",
+  "tech_stack": [
+    "python-3",
+    "click",
+    "rich"
+  ],
+  "patterns": [
+    "command-pattern",
+    "dependency-injection",
+    "layered-architecture"
+  ],
+  "key_abstractions": [
+    "CliContext",
+    "VastCtlApp"
+  ],
+  "responsibilities": [
+    "Organize the CLI source code structure",
+    "Provide the entry point for the vastctl command-line tool",
+    "Manage the lifecycle of the CLI execution context",
+    "Coordinate between user input and backend service calls"
+  ],
+  "entry_points": [
+    "vastctl_cli/main.py"
+  ],
+  "internal_deps": [
+    "vastctl_cli"
+  ],
+  "external_deps": [
+    "click",
+    "rich",
+    "vastctl-core"
+  ],
+  "complexity": "simple",
+  "quality": {
+    "has_tests": false,
+    "has_types": true,
+    "has_docs": true,
+    "has_error_handling": true,
+    "test_coverage": "unknown",
+    "code_smells": []
+  }
+}

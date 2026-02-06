@@ -1,0 +1,84 @@
+{
+  "input_hash": "788d206b1415abdbeb34824f70a61cc5",
+  "tags": [
+    "python",
+    "click-cli",
+    "gpu-provisioning",
+    "remote-execution",
+    "cloud-sync",
+    "ssh-automation",
+    "rsync-wrapper"
+  ],
+  "summary": "This folder serves as the CLI command layer for the VastLab CLI, translating user input into operations for GPU instance management, file transfers, and cloud synchronization. It implements a comprehensive suite of commands for the full lifecycle of remote GPU development, from provisioning and environment injection to training execution and cleanup.",
+  "concepts": [
+    "gpu-as-a-service",
+    "remote-workspace-management",
+    "automated-provisioning",
+    "secure-credential-forwarding",
+    "cli-ux-optimization"
+  ],
+  "purpose": "feature",
+  "domain": "ml-infrastructure",
+  "tech_stack": [
+    "python-3.x",
+    "click-8.x",
+    "rich",
+    "rsync",
+    "ssh",
+    "vast-ai-api",
+    "pyyaml"
+  ],
+  "patterns": [
+    "command-pattern",
+    "context-injection",
+    "facade-pattern",
+    "cli-grouping",
+    "retry-logic"
+  ],
+  "key_abstractions": [
+    "config_group",
+    "profiles_group",
+    "env_group",
+    "TrainExecutor",
+    "run_rsync_with_progress",
+    "ensure_ssh_key_exists",
+    "parse_remote_path"
+  ],
+  "responsibilities": [
+    "Orchestrate GPU instance lifecycle (start, stop, kill, refresh) via Vast.ai API.",
+    "Manage local and cloud-synced provisioning profiles for standardized environment setup.",
+    "Automate secure file transfers and backups using rsync and SFTP wrappers.",
+    "Handle automated environment variable and credential injection into remote instances via SSH.",
+    "Execute and monitor machine learning training jobs with tmux and W&B integration.",
+    "Manage CLI configuration, authentication tokens, and local instance registries."
+  ],
+  "entry_points": [
+    "__init__.py",
+    "instances.py",
+    "transfer.py"
+  ],
+  "internal_deps": [
+    "vastctl_core",
+    "context"
+  ],
+  "external_deps": [
+    "click",
+    "rich",
+    "yaml",
+    "humanize",
+    "subprocess"
+  ],
+  "complexity": "medium",
+  "quality": {
+    "has_tests": false,
+    "has_types": true,
+    "has_docs": true,
+    "has_error_handling": true,
+    "test_coverage": "none",
+    "code_smells": [
+      "long-methods",
+      "tight-coupling-to-subprocess",
+      "manual-retry-loops"
+    ]
+  }
+}

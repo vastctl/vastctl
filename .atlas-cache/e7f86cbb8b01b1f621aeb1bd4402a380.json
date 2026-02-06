@@ -1,0 +1,70 @@
+{
+  "input_hash": "e7f86cbb8b01b1f621aeb1bd4402a380",
+  "tags": [
+    "python",
+    "pytest",
+    "unit-testing",
+    "mocking",
+    "dependency-management",
+    "ml-training",
+    "remote-execution",
+    "automation"
+  ],
+  "summary": "This folder contains the test suite for the vastctl tool, focusing on validating dependency detection and remote training job orchestration. It ensures that project dependencies (requirements.txt, pyproject.toml) are correctly parsed and that the training execution workflow\u2014including SSH connections, file syncing, and tmux management\u2014operates reliably.",
+  "concepts": [
+    "automated-testing",
+    "remote-job-orchestration",
+    "dependency-resolution",
+    "mocking-infrastructure"
+  ],
+  "purpose": "test",
+  "domain": "ml-infrastructure",
+  "tech_stack": [
+    "python-3",
+    "pytest",
+    "unittest.mock"
+  ],
+  "patterns": [
+    "mock-object-pattern",
+    "fixture-pattern",
+    "behavioral-testing",
+    "dependency-injection"
+  ],
+  "key_abstractions": [
+    "TestDependencyDetector",
+    "TestTrainJobFromConfig",
+    "TestTrainExecutor",
+    "mock_ctx",
+    "mock_instance"
+  ],
+  "responsibilities": [
+    "Verify auto-detection and priority logic for Python dependency files (Pipfile, requirements.txt, pyproject.toml).",
+    "Validate the parsing of YAML configuration files for training jobs.",
+    "Ensure the TrainExecutor correctly constructs shell commands for remote execution (pip, tmux, python).",
+    "Test the integration of environment variables like WANDB_API_KEY into remote sessions.",
+    "Mock SSH and storage interfaces to verify the training workflow without requiring live GPU instances."
+  ],
+  "entry_points": [
+    "test_train.py",
+    "test_deps.py",
+    "conftest.py"
+  ],
+  "internal_deps": [
+    "vastctl_core",
+    "cli"
+  ],
+  "external_deps": [
+    "pytest",
+    "pathlib",
+    "unittest.mock"
+  ],
+  "complexity": "medium",
+  "quality": {
+    "has_tests": true,
+    "has_types": false,
+    "has_docs": true,
+    "has_error_handling": true,
+    "test_coverage": "high",
+    "code_smells": []
+  }
+}

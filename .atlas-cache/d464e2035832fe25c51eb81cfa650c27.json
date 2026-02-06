@@ -1,0 +1,69 @@
+{
+  "input_hash": "d464e2035832fe25c51eb81cfa650c27",
+  "tags": [
+    "python",
+    "click-cli",
+    "rich-ui",
+    "dependency-injection",
+    "cloud-synchronization",
+    "gpu-provisioning",
+    "command-pattern"
+  ],
+  "summary": "This folder serves as the primary entry point and orchestration layer for the VastCtl CLI. It defines the command-line structure using Click and manages the lifecycle of the CliContext, which bridges the presentation layer with the underlying business logic in vastctl-core.",
+  "concepts": [
+    "CLI Context Management",
+    "Automated Cloud Sync",
+    "Command Registration",
+    "Presentation-Logic Separation"
+  ],
+  "purpose": "root",
+  "domain": "gpu-instance-management",
+  "tech_stack": [
+    "python-3",
+    "click-8.x",
+    "rich",
+    "vastctl-core"
+  ],
+  "patterns": [
+    "command-pattern",
+    "context-object-pattern",
+    "decorator-pattern",
+    "facade-pattern"
+  ],
+  "key_abstractions": [
+    "CliContext",
+    "cli (click.group)",
+    "pass_ctx (decorator)",
+    "try_cloud_sync"
+  ],
+  "responsibilities": [
+    "Defining the CLI command hierarchy and sub-command registration.",
+    "Managing global CLI state and shared resources via CliContext.",
+    "Initializing core components like Registry, ConnectionManager, and StorageManager.",
+    "Handling automated cloud synchronization and event reporting hooks.",
+    "Providing a unified entry point for the vastctl executable."
+  ],
+  "entry_points": [
+    "main.py",
+    "context.py"
+  ],
+  "internal_deps": [
+    "commands",
+    "vastctl_core"
+  ],
+  "external_deps": [
+    "click",
+    "rich",
+    "logging",
+    "dataclasses"
+  ],
+  "complexity": "medium",
+  "quality": {
+    "has_tests": false,
+    "has_types": true,
+    "has_docs": true,
+    "has_error_handling": true,
+    "test_coverage": "none",
+    "code_smells": []
+  }
+}

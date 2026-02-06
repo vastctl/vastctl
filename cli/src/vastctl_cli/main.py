@@ -43,6 +43,7 @@ from .commands import cloud
 from .commands import profiles
 from .commands import config
 from .commands import env
+from .commands import train as train_cmd
 
 # Register individual commands from instances module
 cli.add_command(instances.start)
@@ -78,6 +79,9 @@ cli.add_command(cloud.sync_cloud, name="sync")
 cli.add_command(profiles.profiles_group, name="profiles")
 cli.add_command(config.config_group, name="config")
 cli.add_command(env.env_group, name="env")
+
+# Register train command
+cli.add_command(train_cmd.train)
 
 
 def main():

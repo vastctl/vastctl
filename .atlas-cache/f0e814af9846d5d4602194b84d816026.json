@@ -1,0 +1,85 @@
+{
+  "input_hash": "f0e814af9846d5d4602194b84d816026",
+  "tags": [
+    "python",
+    "vast-ai",
+    "ssh-automation",
+    "ml-infrastructure",
+    "provisioning-engine",
+    "sqlite-registry",
+    "cloud-telemetry",
+    "rsync-wrapper"
+  ],
+  "summary": "The core logic and domain models for the VastLab GPU management library. It provides a programmatic interface for interacting with Vast.ai, managing local instance registries, and orchestrating remote provisioning and training workflows.",
+  "concepts": [
+    "remote-provisioning",
+    "ephemeral-infrastructure",
+    "secret-injection",
+    "telemetry-privacy",
+    "gpu-orchestration"
+  ],
+  "purpose": "library",
+  "domain": "gpu-management",
+  "tech_stack": [
+    "python-3.10",
+    "httpx",
+    "paramiko",
+    "sqlite3",
+    "pyyaml",
+    "keyring",
+    "appdirs"
+  ],
+  "patterns": [
+    "manager-pattern",
+    "data-transfer-object",
+    "facade-pattern",
+    "strategy-pattern",
+    "active-record-lite"
+  ],
+  "key_abstractions": [
+    "Instance",
+    "VastAPI",
+    "Registry",
+    "ConnectionManager",
+    "StorageManager",
+    "CloudClient",
+    "TrainExecutor",
+    "ProfileStore"
+  ],
+  "responsibilities": [
+    "Manage the lifecycle of GPU instances (start, stop, destroy, search) via Vast.ai REST API.",
+    "Orchestrate remote provisioning including PyTorch, Jupyter, and system package installation.",
+    "Handle secure SSH connection management, port forwarding, and secret injection.",
+    "Maintain a local SQLite-backed registry of instances and their metadata.",
+    "Manage file transfers and recursive directory synchronization using zip and rsync.",
+    "Synchronize privacy-safe instance snapshots with the VastLab Cloud backend.",
+    "Detect project dependencies and execute training jobs in remote tmux sessions."
+  ],
+  "entry_points": [
+    "__init__.py",
+    "vast_api.py",
+    "instance.py",
+    "connection.py"
+  ],
+  "internal_deps": [],
+  "external_deps": [
+    "httpx",
+    "paramiko",
+    "yaml",
+    "keyring",
+    "appdirs",
+    "dotenv"
+  ],
+  "complexity": "complex",
+  "quality": {
+    "has_tests": false,
+    "has_types": true,
+    "has_docs": true,
+    "has_error_handling": true,
+    "test_coverage": "none",
+    "code_smells": [
+      "long-methods",
+      "god-class"
+    ]
+  }
+}

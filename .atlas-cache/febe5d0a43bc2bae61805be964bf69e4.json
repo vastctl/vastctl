@@ -1,0 +1,78 @@
+{
+  "input_hash": "febe5d0a43bc2bae61805be964bf69e4",
+  "tags": [
+    "python",
+    "vast-ai",
+    "gpu-provisioning",
+    "remote-execution",
+    "ssh-automation",
+    "cloud-automation",
+    "hatchling",
+    "infrastructure-as-code"
+  ],
+  "summary": "This folder serves as the core library package for managing Vast.ai GPU instances, providing the foundational logic for provisioning, remote execution, and instance lifecycle management. It defines the public API for programmatic interaction with cloud GPU infrastructure, abstracting complex SSH and API operations into high-level Python interfaces.",
+  "concepts": [
+    "GPU Instance Lifecycle",
+    "Remote Provisioning",
+    "SSH Tunneling",
+    "Environment Injection",
+    "Cloud Resource Discovery"
+  ],
+  "purpose": "root",
+  "domain": "ml-infrastructure",
+  "tech_stack": [
+    "python-3.8+",
+    "hatchling",
+    "httpx",
+    "paramiko",
+    "pyyaml",
+    "appdirs"
+  ],
+  "patterns": [
+    "facade-pattern",
+    "context-manager",
+    "registry-pattern",
+    "manager-pattern"
+  ],
+  "key_abstractions": [
+    "VastAPI",
+    "ConnectionManager",
+    "StorageManager",
+    "Config",
+    "Registry",
+    "Instance"
+  ],
+  "responsibilities": [
+    "Defining the build system and package metadata for the vastctl-core library",
+    "Providing a high-level Python API for searching and filtering GPU offers",
+    "Managing instance lifecycles including creation, starting, stopping, and destruction",
+    "Handling secure remote command execution and environment variable injection via SSH",
+    "Managing file transfers and workspace backups to/from remote instances",
+    "Standardizing configuration management for API keys and default hardware specs"
+  ],
+  "entry_points": [
+    "pyproject.toml",
+    "README.md",
+    "src/vastctl_core"
+  ],
+  "internal_deps": [
+    "src"
+  ],
+  "external_deps": [
+    "httpx",
+    "paramiko",
+    "python-dotenv",
+    "appdirs",
+    "pyyaml",
+    "keyring"
+  ],
+  "complexity": "medium",
+  "quality": {
+    "has_tests": false,
+    "has_types": true,
+    "has_docs": true,
+    "has_error_handling": true,
+    "test_coverage": "unknown",
+    "code_smells": []
+  }
+}

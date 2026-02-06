@@ -1,0 +1,71 @@
+{
+  "input_hash": "1474c2e50116eccbf2ef5652542012d1",
+  "tags": [
+    "python",
+    "click-cli",
+    "gpu-management",
+    "hatchling",
+    "cloud-automation",
+    "devops-tools",
+    "packaging"
+  ],
+  "summary": "This folder serves as the distribution and packaging root for the vastctl-cli tool, a third-party command-line interface for managing Vast.ai GPU instances. It defines the project metadata, dependency requirements, and the 'vastctl' entry point for the Python ecosystem.",
+  "concepts": [
+    "GPU Provisioning",
+    "SSH Tunneling",
+    "Environment Variable Injection",
+    "Remote Execution",
+    "Cloud Resource Management"
+  ],
+  "purpose": "root",
+  "domain": "cloud-infrastructure",
+  "tech_stack": [
+    "python-3.8+",
+    "hatchling",
+    "click-8.0",
+    "rich-12.0",
+    "humanize",
+    "pyyaml"
+  ],
+  "patterns": [
+    "cli-entrypoint",
+    "command-orchestration",
+    "plugin-architecture"
+  ],
+  "key_abstractions": [
+    "vastctl_cli.main:main",
+    "vastctl-cli package",
+    "provisioning-profiles"
+  ],
+  "responsibilities": [
+    "Define project metadata and versioning (0.1.0)",
+    "Manage dependencies including the core library (vastctl-core)",
+    "Register the 'vastctl' console script for system-wide execution",
+    "Provide user documentation and quick-start guides for the CLI",
+    "Configure build targets for wheel distribution"
+  ],
+  "entry_points": [
+    "pyproject.toml",
+    "README.md"
+  ],
+  "internal_deps": [
+    "src"
+  ],
+  "external_deps": [
+    "vastctl-core",
+    "click",
+    "rich",
+    "humanize",
+    "pyyaml",
+    "hatchling"
+  ],
+  "complexity": "simple",
+  "quality": {
+    "has_tests": true,
+    "has_types": true,
+    "has_docs": true,
+    "has_error_handling": true,
+    "test_coverage": "unknown",
+    "code_smells": []
+  }
+}

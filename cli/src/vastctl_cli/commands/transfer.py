@@ -1,12 +1,15 @@
 """File transfer commands for VastLab CLI."""
 
 import sys
+import subprocess
+import re
 from pathlib import Path
 from datetime import datetime
 
 import click
 from rich.console import Console
 from rich.table import Table
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TransferSpeedColumn, TimeRemainingColumn
 import humanize
 
 from vastctl_core import Config, Registry, Instance
@@ -14,6 +17,113 @@ from ..context import CliContext
 
 console = Console()
 pass_ctx = click.make_pass_decorator(CliContext, ensure=True)
+
+
+def get_rsync_version() -> tuple:
+    """Get rsync major.minor version as tuple.
+
+    Returns (0, 0) for Apple's openrsync which doesn't support --info=progress2.
+    """
+    try:
+        result = subprocess.run(['rsync', '--version'], capture_output=True, text=True)
+        # Apple's openrsync shows "openrsync: protocol version X"
+        if 'openrsync' in result.stdout:
+            return (0, 0)  # Treat as old version
+        # GNU rsync shows "rsync  version X.Y.Z"
+        match = re.search(r'rsync\s+version\s+(\d+)\.(\d+)', result.stdout)
+        if match:
+            return (int(match.group(1)), int(match.group(2)))
+    except Exception:
+        pass
+    return (2, 0)  # Assume old version
+
+
+def run_rsync_with_progress(cmd: list, description: str, console: Console) -> bool:
+    """Run rsync command and display progress using rich.
+
+    Uses --info=progress2 on rsync 3.1+, falls back to --progress on older versions.
+    """
+    version = get_rsync_version()
+    use_modern_progress = version >= (3, 1)
+
+    # Add progress flags if not already present
+    if use_modern_progress:
+        if '--info=progress2' not in cmd:
+            cmd.insert(1, '--info=progress2')
+            cmd.insert(2, '--no-inc-recursive')
+    else:
+        if '--progress' not in cmd:
+            cmd.insert(1, '--progress')
+
+    # Choose columns based on whether we have real byte progress
+    if use_modern_progress:
+        columns = [
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(bar_width=30),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TransferSpeedColumn(),
+            TimeRemainingColumn(),
+        ]
+    else:
+        # Old rsync: no real byte counts, just show file progress
+        columns = [
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(bar_width=30),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TextColumn("{task.fields[speed]}"),
+        ]
+
+    with Progress(*columns, console=console, transient=True) as progress:
+        task = progress.add_task(description, total=100, speed="")
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1
+        )
+
+        files_done = 0
+
+        for line in process.stdout:
+            line = line.strip()
+
+            if use_modern_progress:
+                # Modern rsync: "1,234,567  45%  12.34MB/s    0:01:23"
+                match = re.search(r'(\d+)%', line)
+                if match:
+                    pct = int(match.group(1))
+                    progress.update(task, completed=pct)
+            else:
+                # Old rsync --progress: "  1234567 100%   12.34MB/s    0:00:01"
+                if '100%' in line:
+                    files_done += 1
+                    progress.update(task, description=f"{description} ({files_done} files)")
+
+                # Extract speed from rsync output
+                speed_match = re.search(r'([\d.]+[KMG]?B/s)', line)
+                if speed_match:
+                    progress.update(task, speed=speed_match.group(1))
+
+                # Update percentage (per current file)
+                pct_match = re.search(r'(\d+)%', line)
+                if pct_match:
+                    pct = int(pct_match.group(1))
+                    progress.update(task, completed=min(pct, 99))
+
+        process.wait()
+
+        if process.returncode == 0:
+            progress.update(task, completed=100)
+            return True
+        else:
+            stderr = process.stderr.read()
+            if stderr and "No such file" not in stderr:
+                console.print(f"[red]Error: {stderr}[/red]")
+            return False
 
 
 def parse_remote_path(path: str, registry):
@@ -115,51 +225,80 @@ def cp(ctx, source, destination, recursive, force_include, max_size, instance, p
             console.print(f"[red]Error: Local path '{source}' not found[/red]")
             sys.exit(1)
 
-        with console.status(f"Uploading to {inst.name}..."):
-            if recursive or local_path.is_dir():
-                # Use recursive copy for directories
-                result = ctx.storage.copy_recursive_to_instance(
-                    inst, str(local_path), remote_path,
-                    force_include=force_include,
-                    max_size_mb=max_size
-                )
-                success = result.get("success", False)
-                if success:
-                    files_copied = len(result.get("files_copied", []))
-                    files_skipped = len(result.get("files_skipped", []))
-                    total_mb = result.get("total_size_mb", 0)
-                    console.print(f"[green]✓[/green] Uploaded {files_copied} files ({total_mb:.1f}MB) to {inst.name}:{remote_path}")
-                    if files_skipped:
-                        console.print(f"[yellow]  Skipped {files_skipped} files (use --force-include to include)[/yellow]")
-                else:
-                    console.print(f"[red]Upload failed: {result.get('error', 'Unknown error')}[/red]")
-                    sys.exit(1)
+        if recursive or local_path.is_dir():
+            # Use rsync with progress for directory uploads
+            # Ensure source path ends with / to copy contents, not create nested dir
+            src_path = str(local_path)
+            if not src_path.endswith('/'):
+                src_path += '/'
+
+            rsync_cmd = [
+                "rsync",
+                "-avz",
+                "-e", f"ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR -i {ctx.config.ssh_key_path} -p {inst.ssh_port}",
+                src_path,
+                f"root@{inst.ssh_host}:{remote_path}"
+            ]
+
+            # Add exclude patterns from config
+            for pattern in ctx.config.transfer_exclude_patterns:
+                rsync_cmd.insert(2, f"--exclude={pattern}")
+
+            # Add size limit exclusion if configured
+            if not force_include and ctx.config.ignore_large_files:
+                effective_max = max_size if max_size else ctx.config.max_file_size_mb
+                rsync_cmd.insert(2, f"--max-size={effective_max}M")
+
+            success = run_rsync_with_progress(rsync_cmd, f"Uploading to {inst.name}", console)
+            if success:
+                console.print(f"[green]✓[/green] Uploaded to {inst.name}:{remote_path}")
             else:
-                # Single file copy
-                success = ctx.storage.copy_to_instance(inst, str(local_path), remote_path)
-                if success:
-                    console.print(f"[green]✓[/green] Uploaded to {inst.name}:{remote_path}")
-                else:
-                    console.print("[red]Upload failed[/red]")
-                    sys.exit(1)
+                console.print("[red]Upload failed[/red]")
+                sys.exit(1)
+        else:
+            # Single file upload with rsync + progress
+            rsync_cmd = [
+                "rsync",
+                "-avz",
+                "-e", f"ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR -i {ctx.config.ssh_key_path} -p {inst.ssh_port}",
+                str(local_path),
+                f"root@{inst.ssh_host}:{remote_path}"
+            ]
+            success = run_rsync_with_progress(rsync_cmd, f"Uploading to {inst.name}", console)
+            if success:
+                console.print(f"[green]✓[/green] Uploaded to {inst.name}:{remote_path}")
+            else:
+                console.print("[red]Upload failed[/red]")
+                sys.exit(1)
     else:
-        with console.status(f"Downloading from {inst.name}..."):
-            if recursive:
-                # For recursive download, use scp -r
-                import subprocess
-                scp_cmd = [
-                    "scp", "-r",
-                    "-o", "StrictHostKeyChecking=no",
-                    "-o", "LogLevel=ERROR",
-                    "-i", str(ctx.config.ssh_key_path),
-                    "-P", str(inst.ssh_port),
-                    f"root@{inst.ssh_host}:{remote_path}",
-                    str(local_path)
-                ]
-                result = subprocess.run(scp_cmd, capture_output=True, text=True)
-                success = result.returncode == 0
-            else:
-                success = ctx.storage.copy_from_instance(inst, remote_path, str(local_path))
+        # Ensure local directory exists
+        if recursive:
+            local_path.mkdir(parents=True, exist_ok=True)
+        elif local_path.is_dir() or str(local_path).endswith('/'):
+            local_path.mkdir(parents=True, exist_ok=True)
+        else:
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if recursive:
+            # Use rsync with progress for recursive downloads
+            rsync_cmd = [
+                "rsync",
+                "-avz",
+                "-e", f"ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR -i {ctx.config.ssh_key_path} -p {inst.ssh_port}",
+                f"root@{inst.ssh_host}:{remote_path}",
+                str(local_path)
+            ]
+            success = run_rsync_with_progress(rsync_cmd, f"Downloading from {inst.name}", console)
+        else:
+            # Single file - use rsync with progress
+            rsync_cmd = [
+                "rsync",
+                "-avz",
+                "-e", f"ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR -i {ctx.config.ssh_key_path} -p {inst.ssh_port}",
+                f"root@{inst.ssh_host}:{remote_path}",
+                str(local_path)
+            ]
+            success = run_rsync_with_progress(rsync_cmd, f"Downloading from {inst.name}", console)
 
         if success:
             console.print(f"[green]✓[/green] Downloaded to {local_path}")

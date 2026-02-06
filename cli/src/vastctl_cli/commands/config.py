@@ -98,6 +98,25 @@ def config_path(ctx: CliContext):
     console.print(ctx.config.config_path)
 
 
+@config_group.command('init')
+@click.option('--force', '-f', is_flag=True, help='Overwrite existing config')
+@pass_obj
+def config_init(ctx: CliContext, force):
+    """Create config file with defaults
+
+    The config file is normally created on-demand when you use 'config set'
+    or 'config edit'. Use this command to explicitly create it with all
+    default values.
+    """
+    if ctx.config.config_path.exists() and not force:
+        console.print(f"[yellow]Config file already exists:[/yellow] {ctx.config.config_path}")
+        console.print("[dim]Use --force to overwrite with defaults[/dim]")
+        return
+
+    ctx.config.save()
+    console.print(f"[green]✓[/green] Created config file: {ctx.config.config_path}")
+
+
 @config_group.command('edit')
 @pass_obj
 def config_edit(ctx: CliContext):
@@ -105,7 +124,12 @@ def config_edit(ctx: CliContext):
     import os
     import subprocess
 
-    editor = os.environ.get('EDITOR', 'nano')
+    # Ensure config file exists before editing
+    if not ctx.config.config_path.exists():
+        ctx.config.save()
+        console.print(f"[dim]Created config file: {ctx.config.config_path}[/dim]")
+
+    editor = os.environ.get('EDITOR', 'vim')
     try:
         subprocess.run([editor, str(ctx.config.config_path)])
     except FileNotFoundError:

@@ -1,0 +1,61 @@
+{
+  "input_hash": "75833c54cf40eb7a02d9b0c6c8c67d64",
+  "tags": [
+    "python",
+    "vast-ai",
+    "ml-infrastructure",
+    "gpu-provisioning",
+    "cloud-automation",
+    "library-root",
+    "remote-execution"
+  ],
+  "summary": "The primary source root for the vastctl core library, serving as the entry point for the vastctl_core package. It encapsulates the foundational logic for GPU provisioning, remote execution, and cloud infrastructure management on Vast.ai.",
+  "concepts": [
+    "source-root-organization",
+    "package-structure",
+    "gpu-cloud-abstraction"
+  ],
+  "purpose": "root",
+  "domain": "gpu-management",
+  "tech_stack": [
+    "python-3",
+    "vast-ai",
+    "sqlite",
+    "ssh",
+    "rsync"
+  ],
+  "patterns": [
+    "modular-monolith",
+    "domain-driven-design",
+    "orchestration-pattern"
+  ],
+  "key_abstractions": [
+    "vastctl_core"
+  ],
+  "responsibilities": [
+    "Act as the root container for all core library logic",
+    "Expose the vastctl_core package to the build system and installers",
+    "Organize domain models and service logic for Vast.ai interactions",
+    "Provide the structural foundation for GPU instance registry and telemetry"
+  ],
+  "entry_points": [
+    "vastctl_core/"
+  ],
+  "internal_deps": [
+    "vastctl_core"
+  ],
+  "external_deps": [
+    "vast-ai",
+    "sqlite3",
+    "rsync"
+  ],
+  "complexity": "simple",
+  "quality": {
+    "has_tests": false,
+    "has_types": true,
+    "has_docs": true,
+    "has_error_handling": true,
+    "test_coverage": "unknown",
+    "code_smells": []
+  }
+}

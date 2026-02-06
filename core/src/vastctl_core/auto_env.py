@@ -9,11 +9,13 @@ from typing import Dict
 
 # Environment variable prefixes to auto-detect and forward
 CREDENTIAL_PREFIXES = [
-    'AWS_',           # AWS credentials
+    'AWS_',           # AWS credentials (also used for S3-compatible like B2)
+    'B2_',            # Backblaze B2 credentials
     'WANDB_',         # Weights & Biases
     'HF_',            # Hugging Face
     'HUGGING_FACE_',  # Hugging Face (alternative)
     'WARPDATA_',      # Warpdata config
+    'WARPDATASETS_',  # Warpdata/warpdatasets config
     'OPENAI_',        # OpenAI
     'ANTHROPIC_',     # Anthropic
     'COHERE_',        # Cohere
